@@ -20,24 +20,13 @@ exports.getAll = function (cb) {
   })
 }
 
-// GET BY ID
-exports.getById = function (filterId, cb) {
-  exports.getAll((err, tasks) => {
-    if (err) return cb(err)
-    let filtered = tasks.filter(task => (task.id === filterId))
-    cb(null, filtered)
-  })
-}
-
-// FILTER BY COMPLETION
-exports.getByCompletion = function (query, cb) {
+// FILTER BY QUERY
+exports.getConditional = function (query, cb) {
   exports.getAll((err, tasks) => {
     if (err) return cb(err)
 
-    if (query.category) {
-      tasks = tasks.filter(task => (query.isComplete === true))
-    } else {
-      tasks = tasks.filter(task => (query.isComplete === false))
+    if (query.complete) {
+      tasks = tasks.filter(task => (task.complete.toString() === query.complete))
     }
 
     cb(null, tasks)
@@ -53,7 +42,7 @@ exports.write = function (newData, cb) {
 // ADD NEW TASK
 exports.create = function (newTask, cb) {
   newTask.id = uuid()
-  newTask.isComplete = false
+  newTask.complete = false
 
   exports.getAll((err, tasks) => {
     if (err) return cb(err)
@@ -62,16 +51,14 @@ exports.create = function (newTask, cb) {
   })
 }
 
-// UPDATE TASK
-exports.replace = function (filter, updatedTask, cb) {
+// TOGGLE TASK COMPLETION
+exports.toggleComplete = function (filter, cb) {
   exports.getAll((err, tasks) => {
     if (err) return cb(err)
 
     tasks = tasks.map(task => {
       if (task.id === filter.id) {
-        let oldId = task.id
-        task = updatedTask
-        task.id = oldId
+        task.complete === false ? task.complete = true : task.complete = false
         return task
       } else {
         return task
@@ -82,11 +69,19 @@ exports.replace = function (filter, updatedTask, cb) {
   })
 }
 
-// DELETE TASK
-exports.delete = function (filterId, cb) {
+// DELETE TASK BY ID
+exports.delete = function (filter, cb) {
   exports.getAll((err, tasks) => {
     if (err) return cb(err)
-    tasks = tasks.filter(task => (task.id !== filterId))
+
+    if (!filter) {
+      return cb(err)
+    } else if (filter === 'complete') {
+      tasks = tasks.filter(task => (task.complete !== true))
+    } else {
+      tasks = tasks.filter(task => (task.id !== filter))
+    }
+
     exports.write(tasks, cb)
   })
 }
